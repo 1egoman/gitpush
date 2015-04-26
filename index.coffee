@@ -133,9 +133,10 @@ class GitPush
     Anything not specified is prompted for by the app.
 
     == Examples ==
-    #{chalk.blue "ph -c"} ask for the remote but push to the current branch.
-    #{chalk.blue "ph -oc"} push to origin the current branch.
-    #{chalk.blue "ph -hm"} push to heroku the master branch.
+    #{chalk.blue "ph c"} ask for the remote but push to the current branch.
+    #{chalk.blue "ph oc"} push to origin the current branch.
+    #{chalk.blue "ph hm"} push to heroku the master branch.
     """
 
+exports.GitPush = GitPush
 new GitPush argv
