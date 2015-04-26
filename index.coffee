@@ -47,16 +47,14 @@ class GitPush
         ].join " "
 
         # and, run it!
-        exec "git push #{@remote} #{@branch}#{@pushToBranch} #{extra}", (err, out) ->
-          if err
-            e = err.toString()
-            console.log e
+        exec "git push #{@remote} #{@branch}#{@pushToBranch} #{extra}", (worked, out, err) ->
+          console.error err.toString().trim "\n" if not worked
 
-          console.log out if out.length
-          if err
-            console.log chalk.red "Error!"
-          else
+          console.log out.trim "\n" if out.length
+          if worked is null
             console.log chalk.green "Success!"
+          else
+            console.log chalk.red "Error!"
 
   getRemote: (cb) =>
     return cb "origin" if @argv.o or @argv.origin
