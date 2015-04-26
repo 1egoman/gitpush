@@ -16,19 +16,41 @@ argv = require("minimist") args
 
 class GitPush
   constructor: (@argv) ->
-
     # help?
     if @argv.help or @argv['?']
       console.log @help()
       return
+
+    # push or pull?
+    # inquirer.prompt [
+    #   name: "action",
+    #   message: "---> push/pull?"
+    #   default: "push",
+    #   type: "list",
+    #   choices: ["push", "pull"]
+
+    # ], (answers) =>
+    #   action = answers.action
+
+    if @argv.pull then action = "pull" else action = "push"
 
     # get datapoints
     @getRemote (@remote) =>
       @getBranch (@branch, @pushToBranch) =>
 
         # allow supported switches
-        switches = "fvqn".split ''
-        extra = (switches.map (s) -> "-#{s}" if s in args.join " ").join " "
+        # also, add all of the > 1 char switches except for the ones specified
+        keepFlags = ["_", "pull", "remote", "branch", "origin", "current-branch", "f", "v", "q", "n", "o", "h", "p", "m", "d", "c"]
+        extra = Object.keys(@argv).map (k) => 
+          if k not in keepFlags
+            if typeof @argv[k] is "boolean"
+              "--#{k}"
+            else
+              "--#{k} #{@argv[k]}"
+          else
+            ""
+
+        extra = extra.join(" ").trim " "
 
 
         if @pushToBranch is @branch or not @pushToBranch
@@ -40,14 +62,14 @@ class GitPush
         console.log [
           "----->"
           "git"
-          "push"
+          action
           chalk.magenta @remote
           "#{chalk.cyan @branch}#{chalk.bgBlue @pushToBranch}"
           extra
         ].join " "
 
         # and, run it!
-        exec "git push #{@remote} #{@branch}#{@pushToBranch} #{extra}", (worked, out, err) ->
+        exec "git #{action} #{@remote} #{@branch}#{@pushToBranch} #{extra}", (worked, out, err) ->
           console.error err.toString().trim "\n" if not worked
 
           console.log out.trim "\n" if out.length
@@ -93,7 +115,7 @@ class GitPush
           if b[0] is "*" then currentBranch = b.slice(2)
           b.slice(2)
 
-        return cb currentBranch if @argv.c
+        return cb currentBranch if @argv.c or @argv["current-branch"]
 
         b = ["master"].concat b if "master" not in b
         inquirer.prompt [
