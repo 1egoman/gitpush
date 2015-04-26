@@ -1,10 +1,25 @@
+##############################
+### PH - a better git push ###
+##############################
+
 inquirer = require "inquirer"
-argv = require("minimist") process.argv.slice(2)
 {exec} = require "child_process"
 chalk = require "chalk"
 
+# set up args and append a dash if the user
+# omited one
+args = process.argv.slice(2).join ' '
+args = "-#{args}" if args[0] isnt '-'
+args = args.split " "
+argv = require("minimist") args
+
 class GitPush
   constructor: (@argv) ->
+
+    # help?
+    if @argv.help or @argv['?']
+      console.log @help()
+      return
 
     # get datapoints
     @getRemote (@remote) =>
@@ -12,7 +27,7 @@ class GitPush
         
         # allow supported switches
         switches = "fvqn".split ''
-        extra = (switches.map (s) -> "-#{s}" if s in process.argv.slice(2).join " ").join " "
+        extra = (switches.map (s) -> "-#{s}" if s in args.join " ").join " "
 
 
         if @pushToBranch is @branch or not @pushToBranch
@@ -25,7 +40,7 @@ class GitPush
           "----->"
           "git"
           "push"
-          chalk.yellow @remote
+          chalk.magenta @remote
           "#{chalk.cyan @branch}#{chalk.bgBlue @pushToBranch}"
           extra
         ].join " "
@@ -44,10 +59,12 @@ class GitPush
 
   getRemote: (cb) =>
     return cb "origin" if @argv.o or @argv.origin
+    return cb "heroku" if @argv.h or @argv.heroku
+    return cb "production" if @argv.p or @argv.prod
 
     if not (@argv.r or @argv.remote)
       exec "git remote", (err, remotes) ->
-        r = remotes.split "\n"
+        r = remotes.trim("\n").split "\n"
         inquirer.prompt [
           name: "remote",
           message: "---> remote?"
@@ -73,7 +90,7 @@ class GitPush
         
         # construct branch array and find
         # current branch
-        b = branches.split("\n").map (b) -> 
+        b = branches.trim("\n").split("\n").map (b) -> 
           if b[0] is "*" then currentBranch = b.slice(2)
           b.slice(2)
 
@@ -97,5 +114,28 @@ class GitPush
     else
       branch = @argv.b or @argv.branch
       cb branch
+
+  help: ->
+    """
+    Usage: ph [options]
+    #{chalk.yellow "-f, -v, -q, -n"} are the same as git push, normally.
+    
+    == Branch Choices ==
+    #{chalk.cyan "-m"} branch = master
+    #{chalk.cyan "-d"} branch = dev
+    #{chalk.cyan "-c"} branch = currently active branch
+
+    == Remote Choices ==
+    #{chalk.magenta "-o"} remote = origin
+    #{chalk.magenta "-h"} remote = heroku
+    #{chalk.magenta "-p"} remote = production
+
+    Anything not specified is prompted for by the app.
+
+    == Examples ==
+    #{chalk.blue "ph -c"} ask for the remote but push to the current branch.
+    #{chalk.blue "ph -oc"} push to origin the current branch.
+    #{chalk.blue "ph -hm"} push to heroku the master branch.
+    """
 
 new GitPush argv

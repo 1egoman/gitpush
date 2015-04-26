@@ -1,8 +1,8 @@
 {
-  "name": "gitpush",
-  "version": "1.0.0",
+  "name": "ph",
+  "version": "0.0.2",
   "description": "",
-  "main": "index.js",
+  "main": "index.coffee",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -12,5 +12,11 @@
     "chalk": "^1.0.0",
     "inquirer": "^0.8.2",
     "minimist": "^1.1.1"
+  },
+  "scripts": {
+    "prepublish": "coffee -c index.coffee"  
+  },
+  "bin": {
+    "ph": "index.js"
   }
 }
