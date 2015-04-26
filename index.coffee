@@ -4,6 +4,7 @@
 
 inquirer = require "inquirer"
 {exec} = require "child_process"
+{exists} = require "fs"
 chalk = require "chalk"
 
 # set up args and append a dash if the user
@@ -24,7 +25,7 @@ class GitPush
     # get datapoints
     @getRemote (@remote) =>
       @getBranch (@branch, @pushToBranch) =>
-        
+
         # allow supported switches
         switches = "fvqn".split ''
         extra = (switches.map (s) -> "-#{s}" if s in args.join " ").join " "
@@ -34,7 +35,7 @@ class GitPush
           @pushToBranch = ""
         else
           @pushToBranch = ":#{@pushToBranch}"
-        
+
         # log the command we are about to run
         console.log [
           "----->"
@@ -71,7 +72,7 @@ class GitPush
           default: "origin",
           type: "list",
           choices: r
-                  
+
         ], (answers) ->
           remote = answers.remote
           cb remote
@@ -87,10 +88,10 @@ class GitPush
 
     if not (@argv.b or @argv.branch)
       exec "git branch", (err, branches) =>
-        
+
         # construct branch array and find
         # current branch
-        b = branches.trim("\n").split("\n").map (b) -> 
+        b = branches.trim("\n").split("\n").map (b) ->
           if b[0] is "*" then currentBranch = b.slice(2)
           b.slice(2)
 
@@ -119,7 +120,7 @@ class GitPush
     """
     Usage: ph [options]
     #{chalk.yellow "-f, -v, -q, -n"} are the same as git push, normally.
-    
+
     == Branch Choices ==
     #{chalk.cyan "-m"} branch = master
     #{chalk.cyan "-d"} branch = dev
@@ -139,4 +140,10 @@ class GitPush
     """
 
 exports.GitPush = GitPush
-new GitPush argv
+
+# and, check to make sure this is a git repo
+exists "./.git", (doesit) ->
+  if doesit
+    new GitPush argv
+  else
+    console.log chalk.red "This isn't a git repo!"
