@@ -6,6 +6,7 @@ inquirer = require "inquirer"
 {exec} = require "child_process"
 {exists} = require "fs"
 chalk = require "chalk"
+pkg = require "./package.json"
 
 # set up args and append a dash if the user
 # omited one
@@ -19,6 +20,14 @@ class GitPush
     # help?
     if @argv.help or @argv['?']
       console.log @help()
+      return
+
+    # version?
+    if @argv.v or @argv.version
+      console.log """
+      ph - version #{chalk.cyan pkg.version}
+      Run #{chalk.blue "--help"} for help
+      """
       return
 
     # push or pull?
@@ -41,7 +50,7 @@ class GitPush
         # allow supported switches
         # also, add all of the > 1 char switches except for the ones specified
         keepFlags = ["_", "pull", "remote", "branch", "origin", "current-branch", "f", "v", "q", "n", "o", "h", "p", "m", "d", "c"]
-        extra = Object.keys(@argv).map (k) => 
+        extra = Object.keys(@argv).map (k) =>
           if k not in keepFlags
             if typeof @argv[k] is "boolean"
               "--#{k}"
