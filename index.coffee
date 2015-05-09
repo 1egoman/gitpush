@@ -125,11 +125,13 @@ class GitPush
     if not (@argv.b or @argv.branch)
       exec "git branch", (err, branches) =>
 
-        # construct branch array and find
-        # current branch
-        b = branches.trim("\n").split("\n").map (b) ->
-          if b[0] is "*" then currentBranch = b.slice(2)
-          b.slice(2)
+        # construct branch array and find current branch
+        b = branches.trim('\n').split('\n').map (b) ->
+          if b[0] is "*"
+            currentBranch = b.slice(2)
+            currentBranch
+          else
+            b
 
         return cb currentBranch if @argv.c or @argv["current-branch"]
 
