@@ -42,7 +42,10 @@ class GitPush
     # ], (answers) =>
     #   action = answers.action
 
-    if @argv.pull then action = "pull" else action = "push"
+    if @argv.pull or @argv.l
+      action = "pull"
+    else
+      action = "push"
 
     # get datapoints
     @getRemote (@remote) =>
@@ -50,9 +53,9 @@ class GitPush
 
         # allow supported switches
         # also, add all of the > 1 char switches except for the ones specified
-        keepFlags = ["_", "pull", "remote", "branch", "origin", "current-branch", "f", "v", "q", "n", "o", "h", "p", "m", "d", "c"]
+        ignoreFlags = ["_", "pull", "remote", "branch", "origin", "current-branch", "f", "v", "q", "n", "o", "h", "p", "m", "d", "c", "l"]
         extra = Object.keys(@argv).map (k) =>
-          if k not in keepFlags
+          if k not in ignoreFlags
             if typeof @argv[k] is "boolean"
               "--#{k}"
             else
@@ -157,31 +160,43 @@ class GitPush
   help: ->
     """
     Usage: ph [options]
-    #{chalk.yellow "-f, -v, -q, -n"} are the same as git push, normally.
 
-    == Branch Choices ==
+    #{chalk.bold chalk.yellow "== Action =="}
+    By default, do a git push.
+    However, by specifing #{chalk.green "--pull"} or #{chalk.green "-l"}
+    this behavior can be switched, so a pull will occur instead.
+
+    #{chalk.bold chalk.yellow "== Branch Choices =="}
     #{chalk.cyan "-m"} branch = master
     #{chalk.cyan "-d"} branch = dev
     #{chalk.cyan "-c"} branch = currently active branch
 
-    == Remote Choices ==
+    #{chalk.bold chalk.yellow "== Remote Choices =="}
     #{chalk.magenta "-o"} remote = origin
     #{chalk.magenta "-h"} remote = heroku
     #{chalk.magenta "-p"} remote = production
 
-    Anything not specified is prompted for by the app.
+    Any other arguments are just passed through to git push/pull.
 
     == Examples ==
-    #{chalk.blue "ph c"} ask for the remote but push to the current branch.
-    #{chalk.blue "ph oc"} push to origin the current branch.
-    #{chalk.blue "ph hm"} push to heroku the master branch.
+    #{chalk.blue "ph c"} or #{chalk.blue "ph --current-branch"}
+    - ask for the remote but push to the current branch.
+
+    #{chalk.blue "ph oc"} or #{chalk.blue "ph --remote origin --current-branch"}
+    - push to origin the current branch.
+
+    #{chalk.blue "ph hm"} or #{chalk.blue "ph -h -m"} or #{chalk.blue "ph --remote heroku --branch master"}
+    - push to heroku the master branch.
+
+    #{chalk.blue "ph oml"} or #{chalk.blue "ph --pull --branch master --remote origin"}
+    - pull from master the current branch.
     """
 
 exports.GitPush = GitPush
 
 # and, check to make sure this is a git repo
 exists "./.git", (doesit) ->
-  if doesit or argv.h or argv.help or argv['?']
+  if doesit or argv.help or argv['?']
     new GitPush argv
   else
     console.log chalk.red "This isn't a git repo!"
