@@ -181,7 +181,7 @@ exports.GitPush = GitPush
 
 # and, check to make sure this is a git repo
 exists "./.git", (doesit) ->
-  if doesit
+  if doesit or argv.h or argv.help or argv['?']
     new GitPush argv
   else
     console.log chalk.red "This isn't a git repo!"
