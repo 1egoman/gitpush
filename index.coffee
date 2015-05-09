@@ -3,10 +3,11 @@
 ##############################
 
 inquirer = require "inquirer"
-{exec} = require "child_process"
+{exec, spawn} = require "child_process"
 {exists} = require "fs"
 chalk = require "chalk"
 pkg = require "./package.json"
+_ = require "underscore"
 
 # set up args and append a dash if the user
 # omited one
@@ -78,14 +79,20 @@ class GitPush
         ].join " "
 
         # and, run it!
-        exec "git #{action} #{@remote} #{@branch}#{@pushToBranch} #{extra}", (worked, out, err) ->
-          console.error err.toString().trim "\n" if not worked
+        child = spawn "git", _.compact([action, @remote, @branch, @pushToBranch, extra])
 
-          console.log out.trim "\n" if out.length
-          if worked is null
-            console.log chalk.green "Success!"
-          else
-            console.log chalk.red "Error!"
+        onData = (buffer) ->
+          s = buffer.toString()
+
+          # colorize messages
+          s = "-----> #{chalk.green s}" if s.indexOf("up-to-date") isnt -1
+          s = "-----> #{chalk.red s}" if s.indexOf("fatal: ") isnt -1
+
+          console.log s.trim '\n'
+
+        child.stdout.on 'data', onData
+        child.stderr.on 'data', onData
+
 
   getRemote: (cb) =>
     return cb "origin" if @argv.o or @argv.origin
