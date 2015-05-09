@@ -51,13 +51,16 @@ class GitPush
     @getRemote (@remote) =>
       @getBranch (@branch, @pushToBranch) =>
 
-        # allow supported switches
-        # also, add all of the > 1 char switches except for the ones specified
-        ignoreFlags = ["_", "pull", "remote", "branch", "origin", "current-branch", "f", "v", "q", "n", "o", "h", "p", "m", "d", "c", "l"]
+        # pull out all the flags that we care about and stick the rest
+        # at the end of the command.
+        ignoreFlags = ["_", "pull", "remote", "branch", "origin", "current-branch", "v", "q", "n", "o", "h", "p", "m", "d", "c", "l"]
         extra = Object.keys(@argv).map (k) =>
           if k not in ignoreFlags
             if typeof @argv[k] is "boolean"
-              "--#{k}"
+              if k.length is 1
+                "-#{k}"
+              else
+                "--#{k}"
             else
               "--#{k} #{@argv[k]}"
           else
