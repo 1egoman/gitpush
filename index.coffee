@@ -104,6 +104,7 @@ class GitPush
     return cb "origin" if @argv.o or @argv.origin
     return cb "heroku" if @argv.h or @argv.heroku
     return cb "production" if @argv.p or @argv.prod
+    return cb "upstream" if @argv.u or @argv.upstream
 
     if not (@argv.r or @argv.remote)
       exec "git remote", (err, remotes) ->
@@ -178,6 +179,7 @@ class GitPush
     #{chalk.magenta "-o"} remote = origin
     #{chalk.magenta "-h"} remote = heroku
     #{chalk.magenta "-p"} remote = production
+    #{chalk.magenta "-u"} remote = upstream
 
     Any other arguments are just passed through to git push/pull.
 
