@@ -8,6 +8,7 @@ inquirer = require "inquirer"
 chalk = require "chalk"
 pkg = require "./package.json"
 _ = require "underscore"
+async = require "async"
 
 # set up args and append a dash if the user
 # omited one
@@ -75,7 +76,7 @@ class GitPush
           @pushToBranch = ":#{@pushToBranch}"
 
         # log the command we are about to run
-        for branch in _.uniq @branches
+        async.forEach _.uniq(@branches), (branch, cb) =>
           console.log [
             "----->"
             "git"
@@ -88,17 +89,34 @@ class GitPush
           # and, run it!
           child = spawn "git", _.compact([action, @remote, branch, @pushToBranch, extra])
 
-          onData = (buffer) ->
-            s = buffer.toString()
+          onData = (buffer) =>
+            s = buffer.toString().trim '\n'
+            if @branches.length isnt 1 
+              branch = "(#{chalk.cyan branch.trim()}) "
+            else
+              branch = ""
+
 
             # colorize messages
-            s = "-----> #{chalk.green s}" if s.indexOf("up-to-date") isnt -1
-            s = "-----> #{chalk.red s}" if s.indexOf("fatal: ") isnt -1
+            if s.indexOf("up-to-date") isnt -1
+              console.log "-----> #{chalk.green s} #{branch}"
+            else if s.indexOf("fatal: ") isnt -1
+              console.log "-----> #{chalk.red s} #{branch}"
+            else if s.length
+              console.log branch+s
 
-            console.log s.trim '\n'
 
+          cb = _.once cb
           child.stdout.on 'data', onData
           child.stderr.on 'data', onData
+          child.stdout.on 'end', -> cb null
+          child.stderr.on 'end', (buffer) -> cb buffer
+
+        , (err, results) ->
+          if err
+            console.log "-----> Error, aborting."
+          else
+            console.log "+1"
 
 
   getRemote: (cb) =>
