@@ -135,9 +135,9 @@ class GitPush
         b = branches.trim('\n').split('\n').map (b) ->
           if b[0] is "*"
             currentBranch = b.slice(2)
-            currentBranch
+            currentBranch.trim()
           else
-            b
+            b.trim()
 
         return cb currentBranch if @argv.c or @argv["current-branch"]
 
