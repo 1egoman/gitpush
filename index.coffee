@@ -70,13 +70,15 @@ class GitPush
         extra = extra.join(" ").trim " "
 
 
-        if @pushToBranch is @branch or not @pushToBranch
-          @pushToBranch = ""
-        else
-          @pushToBranch = ":#{@pushToBranch}"
-
         # log the command we are about to run
         async.forEach _.uniq(@branches), (branch, cb) =>
+
+          if @pushToBranch is branch or not @pushToBranch
+            @pushToBranch = ""
+          else
+            @pushToBranch = ":#{@pushToBranch}"
+
+
           console.log [
             "----->"
             "git"
