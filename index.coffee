@@ -8,6 +8,7 @@ inquirer = require "inquirer"
 chalk = require "chalk"
 pkg = require "./package.json"
 _ = require "underscore"
+async = require "async"
 
 # set up args and append a dash if the user
 # omited one
@@ -61,7 +62,7 @@ class GitPush
 
     # get datapoints
     @getRemote (@remote) =>
-      @getBranch (@branch, @pushToBranch) =>
+      @getBranch (@branches, @pushToBranch) =>
 
         # pull out all the flags that we care about and stick the rest
         # at the end of the command.
@@ -81,35 +82,55 @@ class GitPush
         extra = extra.join(" ").trim " "
 
 
-        if @pushToBranch is @branch or not @pushToBranch
-          @pushToBranch = ""
-        else
-          @pushToBranch = ":#{@pushToBranch}"
-
         # log the command we are about to run
-        console.log [
-          "----->"
-          "git"
-          action
-          chalk.magenta @remote
-          "#{chalk.cyan @branch}#{chalk.bgBlue @pushToBranch}"
-          extra
-        ].join " "
+        async.forEach _.uniq(@branches), (branch, cb) =>
 
-        # and, run it!
-        child = spawn "git", _.compact([action, @remote, @branch, @pushToBranch, extra])
+          if @pushToBranch is branch or not @pushToBranch
+            @pushToBranch = ""
+          else
+            @pushToBranch = ":#{@pushToBranch}"
 
-        onData = (buffer) ->
-          s = buffer.toString()
 
-          # colorize messages
-          s = "-----> #{chalk.green s}" if s.indexOf("up-to-date") isnt -1
-          s = "-----> #{chalk.red s}" if s.indexOf("fatal: ") isnt -1
+          console.log [
+            "----->"
+            "git"
+            action
+            chalk.magenta @remote
+            "#{chalk.cyan branch}#{chalk.bgBlue @pushToBranch}"
+            extra
+          ].join " "
 
-          console.log s.trim '\n'
+          # and, run it!
+          child = spawn "git", _.compact([action, @remote, branch, @pushToBranch, extra])
 
-        child.stdout.on 'data', onData
-        child.stderr.on 'data', onData
+          onData = (buffer) =>
+            s = buffer.toString().trim '\n'
+            if @branches.length isnt 1 
+              branch = "(#{chalk.cyan branch.trim()}) "
+            else
+              branch = ""
+
+
+            # colorize messages
+            if s.indexOf("up-to-date") isnt -1
+              console.log "-----> #{chalk.green s} #{branch}"
+            else if s.indexOf("fatal: ") isnt -1
+              console.log "-----> #{chalk.red s} #{branch}"
+            else if s.length
+              console.log branch+s
+
+
+          cb = _.once cb
+          child.stdout.on 'data', onData
+          child.stderr.on 'data', onData
+          child.stdout.on 'end', -> cb null
+          child.stderr.on 'end', (buffer) -> cb buffer
+
+        , (err, results) ->
+          if err
+            console.log "-----> Error, aborting."
+          else
+            console.log "+1"
 
 
   getRemote: (cb) =>
@@ -137,9 +158,11 @@ class GitPush
 
   getBranch: (cb) =>
     currentBranch = "master"
+    pushBranches = []
 
-    return cb "master" if @argv.m or @argv.master
-    return cb "dev" if @argv.d or @argv.dev
+    # add branches to list if it matches the flags
+    pushBranches.push "master" if @argv.m or @argv.master
+    pushBranches.push "dev" if @argv.d or @argv.dev
 
     if not (@argv.b or @argv.branch)
       exec "git branch", (err, branches) =>
@@ -151,8 +174,12 @@ class GitPush
             currentBranch.trim()
           else
             b.trim()
+            b
+        # add current branche to list if it matches the flag
+        pushBranches.push currentBranch if @argv.c or @argv["current-branch"]
 
-        return cb currentBranch if @argv.c or @argv["current-branch"]
+        # return if branches contains something
+        return cb pushBranches if pushBranches.length
 
         b = ["master"].concat b if "master" not in b
         inquirer.prompt [
@@ -168,10 +195,10 @@ class GitPush
             choices: b
             default: currentBranch
           ], (answers) ->
-            cb answers.branch, answers.pushto
+            cb [answers.branch], answers.pushto
     else
       branch = @argv.b or @argv.branch
-      cb branch
+      cb [branch]
 
   help: ->
     """
