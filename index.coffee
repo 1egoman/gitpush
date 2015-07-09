@@ -18,12 +18,15 @@ args = args.split " "
 argv = require("minimist") args
 
 isGitRepo = (cb, iter=1) ->
-  pre = (for i in [0...iter] then "../").join ''
+  if iter is 0
+    pre = "./"
+  else
+    pre = (for i in [0...iter-1] then "../").join ''
 
   exists "#{pre}.git", (good) ->
     if good
       cb true
-    else if iter <= process.env.PH_SEARCH_GIT_REPO_AMT or 20
+    else if iter <= (process.env.PH_SEARCH_GIT_REPO_AMT or 20)
       isGitRepo cb, iter+1
     else
       cb false
